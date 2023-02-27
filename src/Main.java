@@ -2,26 +2,51 @@ import java.util.ArrayList;
 import java.util.Random;
 
 public class Main {
+    public static final int MIN_FOR_ONE_THREAD = 100_000,
+            MAX_FOR_ONE_THREAD = 100_000_000,
+            SAMPLE_COUNT = 100,
+            THREADS_COUNT = 10;
+
     public static void main(String[] args) {
 
-        int n, k;
-        n = 10000000;
-        k = 100;
+        ArrayList<IDataFeeder> dataFeeders = new ArrayList<>(THREADS_COUNT);
+        for (int i = 0; i< THREADS_COUNT; i++)
+            dataFeeders.add(new RandomDataFeeder());
 
-        SimpleReservoir<Integer> reservoir = new SimpleReservoir<>(10);
+        ParallelReservoir<Integer> parallelReservoir = new ParallelReservoir<>(dataFeeders, THREADS_COUNT, SAMPLE_COUNT);
 
-        for (int i = 1; i <= n; i++) {
-            if (reservoir.trySample(i))
-                System.out.println("take " + i);
-            else System.out.println("drop " + i);
-        }
+        parallelReservoir.startSampling();
 
-        ArrayList<Integer> list = reservoir.getReservoir();
+        System.out.println(parallelReservoir.getReservoir());
 
-
-        for (Object i : list) {
-            System.out.println(i);
-        }
         return;
+    }
+}
+
+class RandomDataFeeder implements IDataFeeder {
+    private final int TOTAL;
+    private int fedDataCount = 0;
+
+    private Random random = new Random();
+
+    RandomDataFeeder() {
+        int temp = MyUtil.random.nextInt();
+        while (temp < Main.MIN_FOR_ONE_THREAD)
+            temp <<= 1;
+        while (temp > Main.MAX_FOR_ONE_THREAD)
+            temp >>= 1;
+        TOTAL = temp;
+    }
+
+    RandomDataFeeder(int total){
+        this.TOTAL = total;
+    }
+
+    @Override
+    public Integer getData() {
+        if (fedDataCount >= TOTAL)
+            return null;
+        else
+            return random.nextInt();
     }
 }

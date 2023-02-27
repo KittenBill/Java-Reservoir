@@ -1,7 +1,7 @@
 import java.util.Random;
 
 public class MyUtil {
-    static Random random = new Random();
+    static public Random random = new Random();
 
     static boolean flipCoin(double winningRate) {
         return random.nextDouble() < winningRate;
