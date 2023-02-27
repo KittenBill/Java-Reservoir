@@ -1,2 +1,7 @@
-public class ParallelReservoir {
+/*
+*
+* */
+
+public class ParallelReservoir<T> {
+
 }

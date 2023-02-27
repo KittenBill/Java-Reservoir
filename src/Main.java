@@ -5,10 +5,10 @@ public class Main {
     public static void main(String[] args) {
 
         int n, k;
-        n = 1000;
-        k = 10;
+        n = 10000000;
+        k = 100;
 
-        SimpleReservoir reservoir = new SimpleReservoir(10);
+        SimpleReservoir<Integer> reservoir = new SimpleReservoir<>(10);
 
         for (int i = 1; i <= n; i++) {
             if (reservoir.trySample(i))
@@ -16,7 +16,7 @@ public class Main {
             else System.out.println("drop " + i);
         }
 
-        ArrayList list = reservoir.getReservoir();
+        ArrayList<Integer> list = reservoir.getReservoir();
 
 
         for (Object i : list) {

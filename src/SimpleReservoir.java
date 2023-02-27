@@ -1,23 +1,19 @@
 import java.util.ArrayList;
-import java.util.Random;
 
 public class SimpleReservoir<T> {
-    int K; // amount of sample
-    long total;// total elements in the stream
+    int sampleCnt; // number of samples
+    long total;// number of total elements in the stream
     ArrayList<T> reservoir;
-    static Random random = new Random();
 
-    boolean flipCoin(double winningRate) {
-        return random.nextDouble() < winningRate;
-    }
 
-    public <T> SimpleReservoir(int amountOfSample) {
-        K = amountOfSample;
-        reservoir = new ArrayList<>(amountOfSample);
+
+    public <T> SimpleReservoir(int sampleCnt) {
+        this.sampleCnt = sampleCnt;
+        reservoir = new ArrayList<>(sampleCnt);
     }
 
     public boolean trySample(T element) {
-        if (total < K) {
+        if (total < sampleCnt) {
             reservoir.add(element);
             total++;
             return true;
@@ -26,12 +22,10 @@ public class SimpleReservoir<T> {
         total++;
         // else total >= K
         // number of elements in stream is now larger than amount of sample
-        if (flipCoin(K / (double) (total))) {
+        if (MyUtil.flipCoin(sampleCnt / (double) (total))) {
             //keep the new element
 
-            int idx = (int)(random.nextDouble() * K);
-            // idx is in [0, K)
-
+            int idx = MyUtil.chooseOneRandomly(sampleCnt); // idx is in [0, K)
             reservoir.set(idx, element);
 
             return true;
