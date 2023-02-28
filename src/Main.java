@@ -9,21 +9,21 @@ public class Main {
 
     public static void main(String[] args) {
 
-        ArrayList<IDataFeeder> dataFeeders = new ArrayList<>(THREADS_COUNT);
-        for (int i = 0; i< THREADS_COUNT; i++)
+        ArrayList<IDataFeeder<Integer>> dataFeeders = new ArrayList<>(THREADS_COUNT);
+        for (int i = 0; i < THREADS_COUNT; i++)
             dataFeeders.add(new RandomDataFeeder());
 
         ParallelReservoir<Integer> parallelReservoir = new ParallelReservoir<>(dataFeeders, THREADS_COUNT, SAMPLE_COUNT);
 
         parallelReservoir.startSampling();
 
-        System.out.println(parallelReservoir.getReservoir());
+        System.out.println(parallelReservoir.getSampleResult());
 
         return;
     }
 }
 
-class RandomDataFeeder implements IDataFeeder {
+class RandomDataFeeder implements IDataFeeder<Integer> {
     private final int TOTAL;
     private int fedDataCount = 0;
 
@@ -38,7 +38,7 @@ class RandomDataFeeder implements IDataFeeder {
         TOTAL = temp;
     }
 
-    RandomDataFeeder(int total){
+    RandomDataFeeder(int total) {
         this.TOTAL = total;
     }
 
@@ -46,7 +46,9 @@ class RandomDataFeeder implements IDataFeeder {
     public Integer getData() {
         if (fedDataCount >= TOTAL)
             return null;
-        else
+        else {
+            fedDataCount++;
             return random.nextInt();
+        }
     }
 }

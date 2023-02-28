@@ -5,7 +5,7 @@ public class SimpleReservoir<T> {
     private int total;// number of total elements in the stream
     private ArrayList<T> sampleResult;
 
-    public <T> SimpleReservoir(int sampleCnt) {
+    public SimpleReservoir(int sampleCnt) {
         this.SAMPLE_COUNT = sampleCnt;
         sampleResult = new ArrayList<>(sampleCnt);
     }
