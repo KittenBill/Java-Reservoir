@@ -2,7 +2,8 @@ import java.util.ArrayList;
 import java.util.Random;
 
 public class Main {
-    public static final int MIN_FOR_ONE_THREAD = 100_000,
+    public static final int
+            MIN_FOR_ONE_THREAD = 100_000,
             MAX_FOR_ONE_THREAD = 100_000_000,
             SAMPLE_COUNT = 100,
             THREADS_COUNT = 10;
@@ -13,7 +14,8 @@ public class Main {
         for (int i = 0; i < THREADS_COUNT; i++)
             dataFeeders.add(new RandomDataFeeder());
 
-        ParallelReservoir<Integer> parallelReservoir = new ParallelReservoir<>(dataFeeders, THREADS_COUNT, SAMPLE_COUNT);
+        ParallelReservoir<Integer> parallelReservoir =
+                new ParallelReservoir<>(dataFeeders, THREADS_COUNT, SAMPLE_COUNT);
 
         parallelReservoir.startSampling();
 
@@ -30,11 +32,9 @@ class RandomDataFeeder implements IDataFeeder<Integer> {
     private Random random = new Random();
 
     RandomDataFeeder() {
-        int temp = MyUtil.random.nextInt();
-        while (temp < Main.MIN_FOR_ONE_THREAD)
-            temp <<= 1;
-        while (temp > Main.MAX_FOR_ONE_THREAD)
-            temp >>= 1;
+        int temp = random.nextInt();
+        while (temp < Main.MIN_FOR_ONE_THREAD) temp <<= 1;
+        while (temp > Main.MAX_FOR_ONE_THREAD) temp >>= 1;
         TOTAL = temp;
     }
 
@@ -44,8 +44,7 @@ class RandomDataFeeder implements IDataFeeder<Integer> {
 
     @Override
     public Integer getData() {
-        if (fedDataCount >= TOTAL)
-            return null;
+        if (fedDataCount >= TOTAL) return null;
         else {
             fedDataCount++;
             return random.nextInt();

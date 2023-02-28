@@ -2,17 +2,19 @@ import java.util.ArrayList;
 
 public class SimpleReservoir<T> {
     private final int SAMPLE_COUNT; // number of samples
-    private int total;// number of total elements in the stream
-    private ArrayList<T> sampleResult;
+    private int total;// number of elements in the stream in all
+    private ArrayList<T> samples;
 
-    public SimpleReservoir(int sampleCnt) {
-        this.SAMPLE_COUNT = sampleCnt;
-        sampleResult = new ArrayList<>(sampleCnt);
+    public RandomUtility rand = new RandomUtility();
+
+    public SimpleReservoir(int sampleCount) {
+        this.SAMPLE_COUNT = sampleCount;
+        samples = new ArrayList<>(sampleCount);
     }
 
     public boolean trySample(T element) {
         if (total < SAMPLE_COUNT) {
-            sampleResult.add(element);
+            samples.add(element);
             total++;
             return true;
         }
@@ -20,23 +22,32 @@ public class SimpleReservoir<T> {
         total++;
         // else total >= K
         // number of elements in stream is now larger than amount of sample
-        if (MyUtil.flipCoin(SAMPLE_COUNT / (double) (total))) {
+        if (rand.flipCoin(SAMPLE_COUNT / (double) (total))) {
             //keep the new element
 
-            int idx = MyUtil.chooseOneRandomly(SAMPLE_COUNT); // idx is in [0, K)
-            sampleResult.set(idx, element);
+            int idx = rand.chooseOneRandomly(SAMPLE_COUNT); // idx is in [0, K)
+            samples.set(idx, element);
 
             return true;
         }
         return false;
     } // boolean trySample()
 
-    ArrayList<T> getSampleResult(){
-        ArrayList<T> ret = new ArrayList<>(sampleResult.size());
-        return sampleResult;
+    SampleResult<T> getSampleResult(){
+        return new SampleResult<>((ArrayList<T>) samples.clone(), total);
     }
 
     public int getTotal() {
         return total;
+    }
+}
+
+class SampleResult<T>{
+    public ArrayList<T> samples;
+    public int total; // number of elements in the stream in all
+
+    public SampleResult(ArrayList<T> elements, int total){
+        this.samples = elements;
+        this.total = total;
     }
 }
