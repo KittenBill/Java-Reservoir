@@ -5,7 +5,7 @@ public class RandomUtility extends Random {
         return nextDouble() < winningRate;
     }
 
-    int chooseOneRandomly(int length){
+    int pickOne(int length){
         return (int)(nextDouble() * length);
         //returned value is an integer in [0, length)
     }

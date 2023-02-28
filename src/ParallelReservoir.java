@@ -5,12 +5,10 @@
  * 3. Whenever main() needs a sample result, it calls getSampleResult(),
  *      locking SampleThread when SampleThread is calling SimpleReservoir.getSampleResult().
  * */
-
 import java.util.ArrayList;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static java.lang.Thread.sleep;
 
 public class ParallelReservoir<T> {
 
@@ -47,14 +45,12 @@ public class ParallelReservoir<T> {
      * this function should do things as follows:
      * 1. get SampleResult(s) from SampleThreads
      * 2. merge them together in parallel
-     *
      * @return the SampleResult summed up from SampleThreads
      */
     public SampleResult<T> getSampleResult() {
         ArrayBlockingQueue<SampleResult<T>> queue = new ArrayBlockingQueue<>(THREADS_COUNT);
 
-        for (var sampleThread :
-                sampleThreads) {
+        for (SampleThread<T> sampleThread: sampleThreads) {
             queue.add(sampleThread.getSampleResult());
         }
 
@@ -118,7 +114,7 @@ public class ParallelReservoir<T> {
         for (int i = 0; i < SAMPLE_COUNT; i++) {
             ret.add(
                     (rand.flipCoin(possibility) ? x : y).samples
-                            .get(rand.chooseOneRandomly(SAMPLE_COUNT))
+                            .get(rand.pickOne(SAMPLE_COUNT))
             );
         }
         return new SampleResult<>(ret, x.total + y.total);
@@ -143,12 +139,12 @@ class SampleThread<T> extends SimpleReservoir<T> implements Runnable {
     }
 
     /**
-     * @todo: solve problems below
+     * todo: solve problems below
      * 1. don't know whether it's concurrent-safe
      * 2. shallow copy
      */
     @Override
-    SampleResult getSampleResult() {
+    SampleResult<T> getSampleResult() {
 
         lock.lock();
         var ret = super.getSampleResult();

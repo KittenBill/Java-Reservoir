@@ -29,10 +29,10 @@ class RandomDataFeeder implements IDataFeeder<Integer> {
     private final int TOTAL;
     private int fedDataCount = 0;
 
-    private Random random = new Random();
+    private RandomUtility rand = new RandomUtility();
 
     RandomDataFeeder() {
-        int temp = random.nextInt();
+        int temp = rand.nextInt();
         while (temp < Main.MIN_FOR_ONE_THREAD) temp <<= 1;
         while (temp > Main.MAX_FOR_ONE_THREAD) temp >>= 1;
         TOTAL = temp;
@@ -47,7 +47,7 @@ class RandomDataFeeder implements IDataFeeder<Integer> {
         if (fedDataCount >= TOTAL) return null;
         else {
             fedDataCount++;
-            return random.nextInt();
+            return rand.nextInt();
         }
     }
 }

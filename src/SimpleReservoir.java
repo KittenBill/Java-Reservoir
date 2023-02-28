@@ -25,7 +25,7 @@ public class SimpleReservoir<T> {
         if (rand.flipCoin(SAMPLE_COUNT / (double) (total))) {
             //keep the new element
 
-            int idx = rand.chooseOneRandomly(SAMPLE_COUNT); // idx is in [0, K)
+            int idx = rand.pickOne(SAMPLE_COUNT); // idx is in [0, K)
             samples.set(idx, element);
 
             return true;
