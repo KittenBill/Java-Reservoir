@@ -5,6 +5,7 @@
  * 3. Whenever main() needs a sample result, it calls getSampleResult(),
  *      locking SampleThread when SampleThread is calling SimpleReservoir.getSampleResult().
  * */
+
 import java.util.ArrayList;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.locks.ReentrantLock;
@@ -20,24 +21,26 @@ public class ParallelReservoir<T> {
     private final int THREADS_COUNT;
     private final int SAMPLE_COUNT;
     private ArrayList<SampleThread<T>> sampleThreads;
-
+    ArrayBlockingQueue<SampleResult<T>> queue;
     public ParallelReservoir(ArrayList<IDataFeeder<T>> dataFeeders, int threadsCount, int sampleCount) {
         this.THREADS_COUNT = threadsCount;
         this.SAMPLE_COUNT = sampleCount;
         this.dataFeeders = dataFeeders;
+        queue = new ArrayBlockingQueue<>(THREADS_COUNT);
     }
 
     /**
      * init the SampleThread(s) and call start()
+     * todo: needs a flag to notify that every thread has done its work
      */
     public void startSampling() {
         sampleThreads = new ArrayList<>(THREADS_COUNT);
         for (int i = 0; i < THREADS_COUNT; i++) {
-            SampleThread<T> sampleThread = new SampleThread<>(SAMPLE_COUNT, dataFeeders.get(i));
+            SampleThread<T> sampleThread = new SampleThread<>(SAMPLE_COUNT, dataFeeders.get(i), this);
             sampleThreads.add(sampleThread);
-            new Thread(sampleThread).start();
+            sampleThread.setName("sample thread no." + i);
+            sampleThread.start();
         }
-
         return;
     }
 
@@ -45,51 +48,62 @@ public class ParallelReservoir<T> {
      * this function should do things as follows:
      * 1. get SampleResult(s) from SampleThreads
      * 2. merge them together in parallel
+     *
      * @return the SampleResult summed up from SampleThreads
      */
+
+    protected void pushResult(SampleResult<T> sampleResult){
+        queue.add(sampleResult);
+    }
+
     public SampleResult<T> getSampleResult() {
-        ArrayBlockingQueue<SampleResult<T>> queue = new ArrayBlockingQueue<>(THREADS_COUNT);
-
-        for (SampleThread<T> sampleThread: sampleThreads) {
-            queue.add(sampleThread.getSampleResult());
-        }
-
         Runnable merger = () -> {
+            //System.out.println(Thread.currentThread().getName() + " start");
+            //long startTime = System.currentTimeMillis();
             try {
                 SampleResult<T> r1 = queue.take(),
                         r2 = queue.take();
+                //System.out.println(Thread.currentThread().getName() + " start merging");
                 queue.put(merge(r1, r2));
             } catch (InterruptedException e) {
+                ;
                 /*
-                todo: do something here (although it shouldn't be interrupted)
+                todo: do something here
+                 (although it shouldn't be interrupted)
                  */
                 //Thread.currentThread().interrupt();
             }
+            //long endTime = System.currentTimeMillis();
+            //System.out.println(Thread.currentThread().getName() + " completed merge, using " + (endTime - startTime)+ "ms");
         };
 
         /*
          * There are THREADS_COUNT SampleResult(s) at the beginning and
          * fn merge() merges 2 SampleResult(s) into 1 at a time,
          * therefore merge() should be called THREAD_COUNT - 1 times in total.
+         * So there are THREAD_COUNT - 1 mergerThreads started in total.
          * */
         ArrayList<Thread> mergerThreads = new ArrayList<>(THREADS_COUNT - 1);
-        for (int i = 0; i < THREADS_COUNT - 1; i++){
+        for (int i = 0; i < THREADS_COUNT - 1; i++) {
             Thread thread = new Thread(merger);
+            thread.setName("merger thread no." + i);
             thread.start();
             mergerThreads.add(thread);
         }
 
-        for (Thread thread: mergerThreads) {
+        // wait until every mergerThread has done its job
+        for (Thread thread : mergerThreads) {
             try {
                 thread.join();
             } catch (InterruptedException e) {
-                // todo: needs something to do
-                // actually nothing to do here
+                /* todo: needs something to do
+                    actually nothing to do here
+                 */
             }
         }
-
         try {
-            assert(queue.size() == 1);
+            // there should be only one SampleResult left in the queue
+            assert (queue.size() == 1);
             return queue.take();
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
@@ -111,6 +125,8 @@ public class ParallelReservoir<T> {
 
         ArrayList<T> ret = new ArrayList<>(SAMPLE_COUNT);
 
+
+        // todo: ERROR: 同一个元素可能被取一次以上
         for (int i = 0; i < SAMPLE_COUNT; i++) {
             ret.add(
                     (rand.flipCoin(possibility) ? x : y).samples
@@ -121,35 +137,36 @@ public class ParallelReservoir<T> {
     }
 }
 
-class SampleThread<T> extends SimpleReservoir<T> implements Runnable {
-
+class SampleThread<T> extends Thread{
+    SimpleReservoir<T> simpleReservoir;
     private IDataFeeder<T> dataFeeder;
+
+    ParallelReservoir<T> parallelReservoir;
+
 
     /**
      * there's gonna to be data racing on SimpleReservoir
      * 1. Thread itself calls trySample()
      * 2. ParallelReservoir calls getSampleResult
      * therefore we need a lock locking SimpleReservoir
+     *
+     * now assuming no real-time sampling
      */
-    private ReentrantLock lock = new ReentrantLock();
+    // private ReentrantLock lock = new ReentrantLock();
 
-    SampleThread(int sampleCount, IDataFeeder<T> dataFeeder) {
-        super(sampleCount);
+    SampleThread(int sampleCount, IDataFeeder<T> dataFeeder, ParallelReservoir<T> parallelReservoir) {
+        simpleReservoir = new SimpleReservoir<>(sampleCount);
         this.dataFeeder = dataFeeder;
+        this.parallelReservoir = parallelReservoir;
     }
 
     /**
      * todo: solve problems below
-     * 1. don't know whether it's concurrent-safe
-     * 2. shallow copy
+     *  1. don't know whether it's concurrent-safe
+     *  2. shallow copy
      */
-    @Override
     SampleResult<T> getSampleResult() {
-
-        lock.lock();
-        var ret = super.getSampleResult();
-        lock.unlock();
-        return ret;
+        return simpleReservoir.getSampleResult();
     }
 
     /**
@@ -159,22 +176,23 @@ class SampleThread<T> extends SimpleReservoir<T> implements Runnable {
      */
     @Override
     public void run() {
+        //long startTime = System.currentTimeMillis();
+        //System.out.println(Thread.currentThread().getName() + " start");
         T data;
         while (true) {
             // todo: needs an exit
             data = dataFeeder.getData();
             if (data == null) {
-                try {
-                    // todo: needs notifying or interrupting from dataFeeder
-                    wait();
-                } catch (InterruptedException e) {
-                    continue;
-                }
+                break;
             } else {
-                lock.lock();
-                trySample(data);
+                simpleReservoir.trySample(data);
+                //System.out.println(Thread.currentThread().getName() + " takes " + data + " at time " + System.currentTimeMillis());
             }
-            lock.unlock();
         }
+        SampleResult<T> sampleResult = getSampleResult();
+        //long endTime = System.currentTimeMillis();
+        //System.out.println(Thread.currentThread().getName() + " got SampleResult, with total = " + sampleResult.total + ", using " + (endTime - startTime)+ "ms");
+        parallelReservoir.pushResult(sampleResult);
+
     } // void run()
 }
