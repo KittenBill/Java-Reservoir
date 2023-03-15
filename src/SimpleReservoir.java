@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.Iterator;
 
 public class SimpleReservoir<T> {
     private final int SAMPLE_COUNT; // number of samples
@@ -32,6 +33,13 @@ public class SimpleReservoir<T> {
         }
         return false;
     } // boolean trySample()
+
+    public void sampleFrom(Iterator<T> it){
+        while (it.hasNext()){
+            T element = it.next();
+            trySample(element);
+        }
+    }
 
     SampleResult<T> getSampleResult(){
         return new SampleResult<>((ArrayList<T>) samples.clone(), total);

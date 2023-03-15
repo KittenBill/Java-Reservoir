@@ -22,6 +22,7 @@ public class ParallelReservoir<T> {
     private final int SAMPLE_COUNT;
     private ArrayList<SampleThread<T>> sampleThreads;
     ArrayBlockingQueue<SampleResult<T>> queue;
+
     public ParallelReservoir(ArrayList<IDataFeeder<T>> dataFeeders, int threadsCount, int sampleCount) {
         this.THREADS_COUNT = threadsCount;
         this.SAMPLE_COUNT = sampleCount;
@@ -52,7 +53,7 @@ public class ParallelReservoir<T> {
      * @return the SampleResult summed up from SampleThreads
      */
 
-    protected void pushResult(SampleResult<T> sampleResult){
+    protected void pushResult(SampleResult<T> sampleResult) {
         queue.add(sampleResult);
     }
 
@@ -125,19 +126,26 @@ public class ParallelReservoir<T> {
 
         ArrayList<T> ret = new ArrayList<>(SAMPLE_COUNT);
 
+        int from_x = 0, from_y = 0;
 
-        // todo: ERROR: 同一个元素可能被取一次以上
+        // solved: ERROR: 同一个元素可能被取一次以上
         for (int i = 0; i < SAMPLE_COUNT; i++) {
-            ret.add(
-                    (rand.flipCoin(possibility) ? x : y).samples
-                            .get(rand.pickOne(SAMPLE_COUNT))
-            );
+            if (rand.flipCoin(possibility)) from_x++;
+            else from_y++;
         }
+
+        SimpleReservoir<T> sx = new SimpleReservoir<>(from_x), sy = new SimpleReservoir<>(from_y);
+        sx.sampleFrom(x.samples.iterator());
+        sy.sampleFrom(y.samples.iterator());
+
+        ret = sx.getSampleResult().samples;
+        ret.addAll(sy.getSampleResult().samples);
+
         return new SampleResult<>(ret, x.total + y.total);
     }
 }
 
-class SampleThread<T> extends Thread{
+class SampleThread<T> extends Thread {
     SimpleReservoir<T> simpleReservoir;
     private IDataFeeder<T> dataFeeder;
 
@@ -149,7 +157,7 @@ class SampleThread<T> extends Thread{
      * 1. Thread itself calls trySample()
      * 2. ParallelReservoir calls getSampleResult
      * therefore we need a lock locking SimpleReservoir
-     *
+     * <p>
      * now assuming no real-time sampling
      */
     // private ReentrantLock lock = new ReentrantLock();

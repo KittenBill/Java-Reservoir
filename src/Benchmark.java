@@ -6,7 +6,7 @@ public class Benchmark {
             MAX_FOR_ONE_THREAD = 10_000,
             ONE_THREAD = 100_0000,
             SAMPLE_COUNT = 1000,
-            THREADS_COUNT = 10,
+            THREADS_COUNT = 16,
             SIMPLE_RESERVOIR_THREAD = THREADS_COUNT * ONE_THREAD;
 
     public static void main(String[] args) {
