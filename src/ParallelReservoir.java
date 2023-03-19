@@ -124,11 +124,12 @@ public class ParallelReservoir<T> {
         // possibility of keeping a randomly picked element from SampleResult x
         double possibility = x.total / (double) (x.total + y.total);
 
-        ArrayList<T> ret = new ArrayList<>(SAMPLE_COUNT);
+        ArrayList<T> ret;
 
         int from_x = 0, from_y = 0;
 
         // solved: ERROR: 同一个元素可能被取一次以上
+        // todo: need for an algorithm with lower complexity
         for (int i = 0; i < SAMPLE_COUNT; i++) {
             if (rand.flipCoin(possibility)) from_x++;
             else from_y++;
