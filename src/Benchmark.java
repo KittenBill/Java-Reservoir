@@ -2,27 +2,23 @@ import java.util.ArrayList;
 
 public class Benchmark {
     public static final int
-            MIN_FOR_ONE_THREAD = 1_000,
-            MAX_FOR_ONE_THREAD = 10_000,
             ONE_THREAD = 100_0000,
             SAMPLE_COUNT = 1000,
-            THREADS_COUNT = 16,
+            THREADS_COUNT = 4,
             SIMPLE_RESERVOIR_THREAD = THREADS_COUNT * ONE_THREAD;
 
     public static void main(String[] args) {
 
         testSimpleReservoir();
 
-        System.out.println("\n\n-------------------------\n\n");
+        System.out.println("------------PARTITION-------------");
 
         testParallelReservoir();
-
-        return;
     }
 
     static void testSimpleReservoir() {
 
-        RandomUtility rand = new RandomUtility();
+        //RandomUtility rand = new RandomUtility();
 
         SimpleReservoir<Integer> simpleReservoir = new SimpleReservoir<>(SAMPLE_COUNT);
 
@@ -32,7 +28,7 @@ public class Benchmark {
         System.out.println("SEQUENTIAL Sampling started at " + startTime);
 
         for (int i = 0; i < SIMPLE_RESERVOIR_THREAD; i++)
-            simpleReservoir.trySample(rand.nextInt());
+            simpleReservoir.trySample(i);
 
         SampleResult<Integer> sampleResult = simpleReservoir.getSampleResult();
         long endTime = System.currentTimeMillis();
@@ -41,29 +37,37 @@ public class Benchmark {
         System.out.println("sample result: \n" + sampleResult.samples + "\n" +
                 "\twith actual total = " + sampleResult.total);
     }
-    static void testParallelReservoir(){
-        int expectedTotal = 0;
 
-        ArrayList<IDataFeeder<Integer>> dataFeeders = new ArrayList<>(THREADS_COUNT);
-        for (int i = 0; i < THREADS_COUNT; i++) {
-            RandomDataFeeder dataFeeder = new RandomDataFeeder(ONE_THREAD);
-            dataFeeders.add(dataFeeder);
-            expectedTotal += dataFeeder.TOTAL;
-        }
-
-        System.out.println("expected total = " + expectedTotal);
+    static void testParallelReservoir() {
+        System.out.println("expected total = " + ONE_THREAD * THREADS_COUNT);
 
         ParallelReservoir<Integer> parallelReservoir =
-                new ParallelReservoir<>(dataFeeders, THREADS_COUNT, SAMPLE_COUNT);
+                new ParallelReservoir<>(SAMPLE_COUNT);
 
         long startTime = System.currentTimeMillis();
         System.out.println("PARALLEL Sampling started at " + startTime);
 
-        System.out.println("calling startSampling()");
+        ArrayList<Thread> handles = new ArrayList<>(THREADS_COUNT);
 
-        parallelReservoir.startSampling();
+        for (int i = 0; i < THREADS_COUNT; i++) {
+            int start = i * ONE_THREAD;
+            var sampler = parallelReservoir.getSamplerHandle();
+            Runnable sampleThread = () -> {
+                for (int j = start; j < start + ONE_THREAD; j++)
+                    sampler.trySample(j);
+            };
+            Thread thread = new Thread(sampleThread);
+            handles.add(thread);
+            thread.start();
+        }
 
-        System.out.println("calling getSampleResult()");
+        for (Thread handle : handles) {
+            try {
+                handle.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
 
         SampleResult<Integer> sampleResult = parallelReservoir.getSampleResult();
         long endTime = System.currentTimeMillis();
@@ -72,32 +76,5 @@ public class Benchmark {
         System.out.println("sample result: \n" + sampleResult.samples + "\n" +
                 "\twith actual total = " + sampleResult.total);
 
-    }
-}
-
-class RandomDataFeeder implements IDataFeeder<Integer> {
-    protected final int TOTAL;
-    private int fedDataCount = 0;
-
-    private RandomUtility rand = new RandomUtility();
-
-    RandomDataFeeder() {
-        int temp = rand.nextInt();
-        while (temp < Benchmark.MIN_FOR_ONE_THREAD) temp <<= 1;
-        while (temp > Benchmark.MAX_FOR_ONE_THREAD) temp >>= 1;
-        TOTAL = temp;
-    }
-
-    RandomDataFeeder(int total) {
-        this.TOTAL = total;
-    }
-
-    @Override
-    public Integer getData() {
-        if (fedDataCount >= TOTAL) return null;
-        else {
-            fedDataCount++;
-            return rand.nextInt();
-        }
     }
 }
