@@ -1,15 +1,16 @@
 import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
 
 public class Benchmark {
     public static final int
-            ONE_THREAD = 100_0000,
-            SAMPLE_COUNT = 1000,
+            ONE_THREAD = 1_0000_0000,
+            SAMPLE_COUNT = 1000000,
             THREADS_COUNT = 4,
             SIMPLE_RESERVOIR_THREAD = THREADS_COUNT * ONE_THREAD;
 
     public static void main(String[] args) {
 
-        testSimpleReservoir();
+        //testSimpleReservoir();
 
         System.out.println("------------PARTITION-------------");
 
@@ -24,15 +25,15 @@ public class Benchmark {
 
         System.out.println("expected total = " + SIMPLE_RESERVOIR_THREAD);
 
-        long startTime = System.currentTimeMillis();
-        System.out.println("SEQUENTIAL Sampling started at " + startTime);
+        long startTime = System.nanoTime();
+        System.out.println("SEQUENTIAL Sampling started");
 
         for (int i = 0; i < SIMPLE_RESERVOIR_THREAD; i++)
             simpleReservoir.trySample(i);
 
         SampleResult<Integer> sampleResult = simpleReservoir.getSampleResult();
-        long endTime = System.currentTimeMillis();
-        System.out.println("SEQUENTIAL Sampling completed at " + endTime + ", using " + (endTime - startTime) + "ms");
+        long endTime = System.nanoTime();
+        System.out.println("SEQUENTIAL Sampling completed, using " + TimeUnit.NANOSECONDS.toMillis(endTime - startTime) + "ms");
 
         System.out.println("sample result: \n" + sampleResult.samples + "\n" +
                 "\twith actual total = " + sampleResult.total);
@@ -44,8 +45,8 @@ public class Benchmark {
         ParallelReservoir<Integer> parallelReservoir =
                 new ParallelReservoir<>(SAMPLE_COUNT);
 
-        long startTime = System.currentTimeMillis();
-        System.out.println("PARALLEL Sampling started at " + startTime);
+        long startTime = System.nanoTime();
+        System.out.println("PARALLEL Sampling started");
 
         ArrayList<Thread> handles = new ArrayList<>(THREADS_COUNT);
 
@@ -57,6 +58,7 @@ public class Benchmark {
                     sampler.trySample(j);
             };
             Thread thread = new Thread(sampleThread);
+            thread.setName("sampler thread no." + i);
             handles.add(thread);
             thread.start();
         }
@@ -70,8 +72,8 @@ public class Benchmark {
         }
 
         SampleResult<Integer> sampleResult = parallelReservoir.getSampleResult();
-        long endTime = System.currentTimeMillis();
-        System.out.println("PARALLEL Sampling completed at " + endTime + ", using " + (endTime - startTime) + "ms");
+        long endTime = System.nanoTime();
+        System.out.println("PARALLEL Sampling completed, using " + TimeUnit.NANOSECONDS.toMillis(endTime - startTime) + "ms");
 
         System.out.println("sample result: \n" + sampleResult.samples + "\n" +
                 "\twith actual total = " + sampleResult.total);

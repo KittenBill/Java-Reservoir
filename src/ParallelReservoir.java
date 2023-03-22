@@ -49,6 +49,7 @@ public class ParallelReservoir<T> {
                         r2 = queue.take();
                 queue.put(merge(r1, r2));
             } catch (InterruptedException e) {
+                e.printStackTrace();
                 /*
                 todo: do something here
                  (although it shouldn't be interrupted)
@@ -98,7 +99,7 @@ public class ParallelReservoir<T> {
      * @param y another SampleResult
      * @return merge result
      */
-    public SampleResult<T> merge(SampleResult<T> x, SampleResult<T> y) {
+    private SampleResult<T> merge(SampleResult<T> x, SampleResult<T> y) {
         RandomUtility rand = new RandomUtility();
 
         // possibility of keeping a randomly picked element from SampleResult x
@@ -134,11 +135,7 @@ class SamplerHandle<T> extends SimpleReservoir<T> {
      * 1. Thread itself calls trySample()
      * 2. ParallelReservoir calls getSampleResult
      * therefore we need a lock locking SimpleReservoir
-     * <p>
-     * now assuming no real-time sampling
-     */
-    // private ReentrantLock lock = new ReentrantLock();
-
+    */
     SamplerHandle(int sampleCount) {
         super(sampleCount);
     }
