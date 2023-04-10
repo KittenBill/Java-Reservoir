@@ -11,11 +11,13 @@ public class Benchmark {
 
     public static void main(String[] args) {
 
-        bench("SEQUENTIAL RESERVOIR", testSimpleReservoir);
+        testSimpleReservoir.test();
+
+        //bench("SEQUENTIAL RESERVOIR", testSimpleReservoir);
 
         System.out.println("------------PARTITION-------------");
 
-        bench("PARALLEL RESERVOIR", testParallelReservoir);
+        // bench("PARALLEL RESERVOIR", testParallelReservoir);
     }
 
     static void bench(String name, Testable toTest){
@@ -48,15 +50,21 @@ public class Benchmark {
         for (int i = 0; i < SIMPLE_RESERVOIR_THREAD; i++)
             simpleReservoir.trySample(i);
 
-        SampleResult<Integer> sampleResult = simpleReservoir.getSampleResult();
+        SampleResult<Integer> result = simpleReservoir.getSampleResult();
         long endTime = System.nanoTime();
         long timeElapsed = TimeUnit.NANOSECONDS.toMillis(endTime - startTime);
         /*
         System.out.println("SEQUENTIAL Sampling completed, using " + timeElapsed + "ms");
 
-        System.out.println("sample result: \n" + sampleResult.samples + "\n" +
-                "\twith actual total = " + sampleResult.total);
+        System.out.println("sample result: \n" + result.samples + "\n" +
+                "\twith actual total = " + result.total);
          */
+        long total =0;
+        for (int i :
+                result.samples) {
+            total += i;
+        }
+        System.out.println("avg = " + total/(double)result.samples.size());
 
         return timeElapsed;
     };
@@ -103,6 +111,7 @@ public class Benchmark {
                 "\twith actual total = " + sampleResult.total);
 
          */
+
         return timeElapsed;
     };
 }

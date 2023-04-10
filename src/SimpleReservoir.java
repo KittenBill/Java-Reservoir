@@ -6,7 +6,7 @@ public class SimpleReservoir<T> {
     private int total;// number of elements in the stream in all
     private ArrayList<T> samples;
 
-    public RandomUtility rand = new RandomUtility();
+    private RandomUtility rand = new RandomUtility();
 
     public SimpleReservoir(int sampleCount) {
         this.SAMPLE_COUNT = sampleCount;

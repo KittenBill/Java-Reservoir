@@ -7,6 +7,7 @@
  * */
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -38,8 +39,10 @@ public class ParallelReservoir<T> {
 
         ArrayBlockingQueue<SampleResult<T>> queue = new ArrayBlockingQueue<>(threadCount);
 
-        for (SamplerHandle<T> sampler :
-                samplers) {
+        for (SamplerHandle<T> sampler : samplers) {
+            SampleResult<T> result = sampler.getSampleResult();
+            if (result == null)
+                return null;
             queue.add(sampler.getSampleResult());
         }
 
@@ -155,6 +158,26 @@ class SamplerHandle<T> extends SimpleReservoir<T> {
         try{
             lock.lock();
             return super.trySample(element);
+        }finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
+    public int getTotal() {
+        try{
+            lock.lock();
+            return super.getTotal();
+        }finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
+    public void sampleFrom(Iterator<T> it) {
+        try{
+            lock.lock();
+            super.sampleFrom(it);
         }finally {
             lock.unlock();
         }
